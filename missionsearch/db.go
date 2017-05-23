@@ -23,8 +23,8 @@ import (
 	"github.com/huichen/sego"
 )
 
-var bucketMission = []byte("m")
-var bucketIndex = []byte("i")
+var bucketMission = []byte{'m'}
+var bucketIndex = []byte{'i'}
 
 type DB struct {
 	b *bolt.DB
