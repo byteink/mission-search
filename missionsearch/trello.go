@@ -15,7 +15,16 @@
 package missionsearch
 
 import (
+	"time"
+
+	"golang.org/x/time/rate"
+
+	gtrello "github.com/VojtechVitek/go-trello"
 	"github.com/boltdb/bolt"
+)
+
+const (
+	missionsBoardID = "LvwOjrYP"
 )
 
 // TrelloSyncTask  sync data from trello
@@ -38,6 +47,41 @@ func NewTrelloSyncTask(c *Config, outputDir string, stopCh <-chan struct{}) *Tre
 
 // Run run task
 func (t *TrelloSyncTask) Run() (db *bolt.DB, err error) {
-	// TODO
+	db, err = bolt.Open(t.outputDir, 0644, nil)
+	if err != nil {
+		return
+	}
+
+	var token string
+	var cli *gtrello.Client
+	cli, err = gtrello.NewAuthClient(t.c.TrelloAppKey, &token)
+	if err != nil {
+		return
+	}
+
+	rateLimiter := rate.NewLimiter(rate.Every(10*time.Second), 150)
+	checkRateLimit := func() {
+		r := rateLimiter.ReserveN(time.Now(), 1)
+		if !r.OK() {
+			time.Sleep(r.Delay())
+		}
+	}
+
+	var board *gtrello.Board
+	checkRateLimit()
+	board, err = cli.Board(missionsBoardID)
+	if err != nil {
+		return
+	}
+
+	var lists []gtrello.List
+	checkRateLimit()
+	lists, err = board.Lists()
+	if err != nil {
+		return
+	}
+
+	_ = lists
+
 	return nil, nil
 }
