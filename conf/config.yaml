@@ -1,0 +1,8 @@
+# data dir
+data_dir: ./data
+
+# trello api key
+trello_appkey: appkey
+
+# telegram bot token:
+telegram_bot_token: token
