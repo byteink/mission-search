@@ -15,6 +15,7 @@
 package missionsearch
 
 import (
+	"log"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -47,6 +48,8 @@ func NewTrelloSyncTask(c *Config, outputDir string, stopCh <-chan struct{}) *Tre
 
 // Run run task
 func (t *TrelloSyncTask) Run() (db *bolt.DB, err error) {
+	start := time.Now()
+
 	db, err = bolt.Open(t.outputDir, 0644, nil)
 	if err != nil {
 		return
@@ -82,6 +85,8 @@ func (t *TrelloSyncTask) Run() (db *bolt.DB, err error) {
 	}
 
 	_ = lists
+
+	log.Printf("trello sync finished. take %v", time.Since(start))
 
 	return nil, nil
 }

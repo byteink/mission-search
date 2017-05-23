@@ -14,20 +14,28 @@
 
 package missionsearch
 
-// Mission mission
-type Mission struct {
-	// CarID trello unique card id
-	CardID string `json:"cid"`
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
-	// Title mission name
-	Title string `json:"Title"`
+// Store missions data storage
+type Store struct {
+	db unsafe.Pointer
 
-	// DescData mission description data
-	DescData string `json:"desc_data"`
+	nextDBNum uint64
+}
 
-	// CoverURL mission cover image url
-	CoverURL string `json:"cover_url"`
+// OpenStore open DB
+func OpenStore(c *Config) (*Store, error) {
+	// TODO:
+	return nil, nil
+}
 
-	// Labels mission labels
-	Labels []string
+// Update
+func (s *Store) Update(newDB *DB) {
+	old := atomic.SwapPointer(&s.db, unsafe.Pointer(newDB))
+	if old != nil {
+		(*DB)(old).Close()
+	}
 }
