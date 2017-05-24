@@ -18,6 +18,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"log"
 
 	"github.com/boltdb/bolt"
 	"github.com/huichen/sego"
@@ -26,6 +27,7 @@ import (
 var bucketMission = []byte{'m'}
 var bucketIndex = []byte{'i'}
 
+// DB mission storage db
 type DB struct {
 	b *bolt.DB
 
@@ -79,6 +81,7 @@ func (db *DB) Put(m *Mission) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("put new mission: %v", string(data))
 	binary.BigEndian.PutUint64(db.scratch, db.docID)
 	err = db.b.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(bucketMission)

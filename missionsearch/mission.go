@@ -22,12 +22,27 @@ type Mission struct {
 	// Title mission name
 	Title string `json:"Title"`
 
-	// DescData mission description data
-	DescData string `json:"desc_data"`
+	// URL trello url
+	URL string `json:"url"`
+
+	// Desc mission description
+	Desc string `json:"desc"`
 
 	// CoverURL mission cover image url
 	CoverURL string `json:"cover_url"`
 
 	// Labels mission labels
-	Labels []string
+	Labels []string `json:"labels"`
+}
+
+// NewMission new mission 
+func NewMission(id, title, url, desc, cover string, labels []string) *Mission {
+	return &Mission{
+		CardID:   id,
+		Title:    title,
+		URL:      url,
+		Desc:     desc,
+		CoverURL: cover,
+		Labels:   labels,
+	}
 }

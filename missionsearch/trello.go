@@ -20,8 +20,11 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"strings"
+
+	"fmt"
+
 	gtrello "github.com/VojtechVitek/go-trello"
-	"github.com/boltdb/bolt"
 )
 
 const (
@@ -30,30 +33,26 @@ const (
 
 // TrelloSyncTask  sync data from trello
 type TrelloSyncTask struct {
-	c         *Config
-	outputDir string
-	stopCh    <-chan struct{}
+	c  *Config
+	db *DB
 
-	docID int
+	stopCh <-chan struct{}
 }
 
 // NewTrelloSyncTask start sync with trello
 // outputDir: new blotdb path
-func NewTrelloSyncTask(c *Config, outputDir string, stopCh <-chan struct{}) *TrelloSyncTask {
+func NewTrelloSyncTask(c *Config, db *DB, stopCh <-chan struct{}) *TrelloSyncTask {
 	return &TrelloSyncTask{
-		c:         c,
-		outputDir: outputDir,
+		c:      c,
+		db:     db,
+		stopCh: stopCh,
 	}
 }
 
 // Run run task
-func (t *TrelloSyncTask) Run() (db *bolt.DB, err error) {
+func (t *TrelloSyncTask) Run() (err error) {
 	start := time.Now()
-
-	db, err = bolt.Open(t.outputDir, 0644, nil)
-	if err != nil {
-		return
-	}
+	count := 0
 
 	var token string
 	var cli *gtrello.Client
@@ -84,9 +83,48 @@ func (t *TrelloSyncTask) Run() (db *bolt.DB, err error) {
 		return
 	}
 
-	_ = lists
+	for _, l := range lists {
+		if strings.HasPrefix(l.Name, "通知") {
+			fmt.Println(l.Name)
+			continue
+		}
 
-	log.Printf("trello sync finished. take %v", time.Since(start))
+		checkRateLimit()
+		cards, err := l.Cards()
+		if err != nil {
+			log.Printf("\n\nget card failed: %v, list: %v", err, l.Name)
+			return err
+		}
+		for _, c := range cards {
+			var labels []string
+			for _, l := range c.Labels {
+				labels = append(labels, l.Name)
+			}
 
-	return nil, nil
+			// get cover image url
+			var coverURL string
+			if c.IdAttachmentCover != "" {
+				checkRateLimit()
+				coverAttachment, err := c.Attachment(c.IdAttachmentCover)
+				if err != nil {
+					log.Printf("\n\nget cover attachment failed: %v, card: %v, cover: %v, url: %v", err, c.Id, c.IdAttachmentCover, c.Url)
+					return err
+				}
+				if coverAttachment != nil {
+					coverURL = coverAttachment.Url
+				}
+			}
+
+			m := NewMission(c.Id, c.Name, c.Url, c.Desc, coverURL, labels)
+			if err := t.db.Put(m); err != nil {
+				log.Printf("\n\nput mission to db failed: %v, card: %v", err, c)
+				return err
+			}
+			count++
+		}
+	}
+
+	log.Printf("trello sync finished. num: %d, take: %v", count, time.Since(start))
+
+	return nil
 }

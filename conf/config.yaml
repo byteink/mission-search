@@ -6,3 +6,6 @@ trello_appkey: appkey
 
 # telegram bot token:
 telegram_bot_token: token
+
+# sego dicts
+sego_dicts: ./dict/sego.dict

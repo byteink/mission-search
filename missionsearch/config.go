@@ -30,6 +30,8 @@ type Config struct {
 	TrelloAppKey string `yaml:"trello_appkey"`
 
 	TelegramBotToken string `yaml:"telegram_bot_token"`
+
+	SegoDicts string `yaml:"sego_dicts"`
 }
 
 // Validate check config validate
@@ -45,6 +47,9 @@ func (c *Config) Validate() error {
 	}
 	if c.TelegramBotToken == "" {
 		return errors.New("invalid telegram bot token")
+	}
+	if c.SegoDicts == "" {
+		return errors.New("invalid sego dictionarys")
 	}
 
 	return nil

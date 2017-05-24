@@ -24,9 +24,21 @@ import (
 var conf = flag.String("conf", "./conf/config.yaml", "config file (default: ./conf/config.yaml")
 
 func main() {
+	flag.Parse()
+
 	c, err := ms.ParseConfigFile(*conf)
 	if err != nil {
 		panic("parse config file failed: " + err.Error())
 	}
 	log.Printf("config: %v", c)
+
+	db, err := ms.OpenDB("./data", c.SegoDicts)
+	if err != nil {
+		panic(err)
+	}
+
+	t := ms.NewTrelloSyncTask(c, db, nil)
+	if err := t.Run(); err != nil {
+		panic(err)
+	}
 }
