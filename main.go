@@ -18,6 +18,8 @@ import (
 	"flag"
 	"log"
 
+	"fmt"
+
 	ms "github.com/byteink/mission-search/missionsearch"
 )
 
@@ -37,8 +39,16 @@ func main() {
 		panic(err)
 	}
 
-	t := ms.NewTrelloSyncTask(c, db, nil)
-	if err := t.Run(); err != nil {
+	ms, err := db.Search("宇宙")
+	if err != nil {
 		panic(err)
 	}
+	for _, m := range ms {
+		fmt.Printf("%v\n\n", m)
+	}
+
+	// t := ms.NewTrelloSyncTask(c, db, nil)
+	// if err := t.Run(); err != nil {
+	// 	panic(err)
+	// }
 }

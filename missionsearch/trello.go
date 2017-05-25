@@ -61,10 +61,11 @@ func (t *TrelloSyncTask) Run() (err error) {
 		return
 	}
 
-	rateLimiter := rate.NewLimiter(rate.Every(10*time.Second), 150)
+	rateLimiter := rate.NewLimiter(rate.Every(10*time.Second), 300)
 	checkRateLimit := func() {
 		r := rateLimiter.ReserveN(time.Now(), 1)
 		if !r.OK() {
+			log.Printf("\n\n@request delayed %v", r.Delay())
 			time.Sleep(r.Delay())
 		}
 	}

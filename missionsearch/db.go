@@ -48,11 +48,15 @@ func OpenDB(path, dicts string) (*DB, error) {
 	}
 	err = b.Batch(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucket(bucketMission); err != nil {
-			return err
+			if err != bolt.ErrBucketExists {
+				return err
+			}
 		}
 
 		if _, err := tx.CreateBucket(bucketIndex); err != nil {
-			return err
+			if err != bolt.ErrBucketExists {
+				return err
+			}
 		}
 		return nil
 	})
@@ -110,21 +114,51 @@ func (db *DB) Put(m *Mission) error {
 	return nil
 }
 
+// Search search missions
 func (db *DB) Search(query string) ([]*Mission, error) {
 	segments := db.segmenter.Segment([]byte(query))
 	if len(segments) == 0 {
 		return nil, nil
 	}
+
+	res := make(map[uint64]int)
 	for _, seg := range segments {
 		term := seg.Token().Text()
 		if isIndexTerm(term) {
-			if err := db.updateIndex(term, db.scratch); err != nil {
+			docs, err := db.queryIndex(term)
+			if err != nil {
 				return nil, err
+			}
+			for _, d := range docs {
+				res[d]++
 			}
 		}
 	}
-	// TODO:
-	return nil, nil
+
+	// TODO: order by map value
+
+	var missions []*Mission
+	err := db.b.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(bucketMission)
+		buf := make([]byte, 8)
+		for k := range res {
+			binary.BigEndian.PutUint64(buf, k)
+			mdata := bucket.Get(buf)
+			m := &Mission{}
+			if mdata != nil {
+				if err := json.Unmarshal(mdata, m); err != nil {
+					return err
+				}
+				missions = append(missions, m)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return missions, nil
 }
 
 func (db *DB) updateIndex(term string, docID []byte) error {
